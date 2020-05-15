@@ -1,0 +1,188 @@
+﻿@{
+    Layout = "~/Views/Shared/_FormWhite.cshtml";
+}
+
+<div class="wrapper animated fadeInRight">
+    <form id="form" class="form-horizontal m">
+        <input id="studentCode" col="StudentCode" type="text" class="hidden" />
+        <div class="form-group">
+            <label class="col-sm-2 control-label ">学生姓名<font class="red"> *</font></label>
+            <div class="col-sm-4">
+                <input id="studentName" col="StudentName" type="text" class="form-control" readonly="readonly" disabled="disabled" />
+            </div>
+            <label class="col-sm-2 control-label ">单据号</label>
+            <div class="col-sm-4">
+                <input id="invoiceNo" col="InvoiceNo" type="text" class="form-control" readonly="readonly" disabled="disabled" />
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="col-sm-2 control-label ">收费单<font class="red"> *</font></label>
+            <div class="col-sm-4">
+                <div id="charge" col="ChargeSheetId"></div>
+            </div>
+            <label class="col-sm-2 control-label ">收费单号<font class="red"> *</font></label>
+            <div class="col-sm-4">
+                <input id="chargeNo" col="ChargeNo" type="text" class="form-control" readonly="readonly" disabled="disabled" />
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="col-sm-2 control-label ">总费用</label>
+            <div class="col-sm-4">
+                <input id="summoney" type="text" class="form-control" readonly="readonly" disabled="disabled" />
+            </div>
+            <label class="col-sm-2 control-label ">已收</label>
+            <div class="col-sm-4">
+                <input id="yesmoney" type="text" class="form-control" readonly="readonly" disabled="disabled" />
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="col-sm-2 control-label ">本次收费<font class="red"> *</font></label>
+            <div class="col-sm-4">
+                <input id="money" col="Money" type="text" class="form-control" />
+            </div>
+
+            <label class="col-sm-2 control-label ">欠费</label>
+            <div class="col-sm-4">
+                <input id="nomoney" type="text" col="NoMoney" class="form-control" readonly="readonly" disabled="disabled" />
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="col-sm-2 control-label ">收费类型<font class="red"> *</font></label>
+            <div class="col-sm-4">
+                <div id="type" col="Type"></div>
+            </div>
+            <label class="col-sm-2 control-label ">收费时间<font class="red"> *</font></label>
+            <div class="col-sm-4">
+                <input id="chargeDate" col="ChargeDate" type="text" class="form-control" />
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="col-sm-2 control-label ">收费人<font class="red"> *</font></label>
+            <div class="col-sm-4">
+                <input id="userName" col="UserName" type="text" class="form-control" />
+            </div>
+            <label class="col-sm-2 control-label ">备注<font class="red"> *</font></label>
+            <div class="col-sm-4">
+                <textarea id="remarks" col="Remarks" class="form-control" style="height:60px"></textarea>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script type="text/javascript">
+    var id = ys.request("id");
+    var infos;
+
+    $(function () {
+        laydate.render({
+            elem: '#chargeDate',
+            type: 'datetime',
+            trigger: 'click'
+        });
+
+        $("#type").ysComboBox({
+            url: '@Url.Content("~/ChargeManage/TypeConfig/GetListJsonWeb")',
+            dataName: "Result",
+            key: "Type",
+            value: "TypeName",
+            class: "form-control",
+        });
+        
+        ys.ajax({
+            url: '@Url.Content("~/ChargeManage/Sheet/GetListJsonStudentCode")' + '?StudentCode=' + @ViewBag.StudentCode,
+            type: 'get',
+            success: function (obj) {
+                infos = obj;
+                $("#charge").ysComboBox({
+                    data: obj,
+                    key: "Id",
+                    value: "ChargeName",
+                    class: "form-control",
+                });
+            }
+        });
+
+        getForm();
+
+        $('#form').validate({
+            rules: {
+                chargeDate: { required: true },
+                userName: { required: true },
+                money: { required: true, number: true },
+                type: { required: true },
+            }
+        });
+
+        //选择select时触发
+        $("#charge").change(function () {
+            var id = $("#charge").ysComboBox("getValue");
+            //alert($("#charge").ysComboBox("getValue"));
+            for (var i = 0; i < infos.length; i++) {
+                var info = infos[i];
+                if (info.Id == id) {
+                    $('#chargeNo').val(info.ChargeNo);
+                    $('#summoney').val(info.SumMoney);
+                    $('#yesmoney').val(info.YesMoney);
+                    $('#money').val(info.NoMoney);
+                    $('#nomoney').val(0);
+                }
+            }
+        });
+
+        $("#money").on("input propertychange", function () {
+            var m = $('#summoney').val() - $('#yesmoney').val() - $('#money').val();
+            $('#nomoney').val(m);
+        });
+
+    });
+
+
+
+    function getForm() {
+        if (id > 0) {
+            ys.ajax({
+                url: '@Url.Content("~/ChargeManage/Record/GetFormJson")' + '?id=' + id,
+                type: 'get',
+                success: function (obj) {
+                    if (obj.Tag == 1) {
+                        $('#form').setWebControls(obj.Result);
+                    }
+                }
+            });
+        }
+        else {
+            var defaultData = {};
+            defaultData.StudentName = "@ViewBag.StudentName";
+            defaultData.StudentCode = "@ViewBag.StudentCode";
+            defaultData.Type = "xx";
+            $('#form').setWebControls(defaultData);
+        }
+    }
+
+    function saveForm(index) {
+        if ($('#form').validate().form()) {
+            var postData = $('#form').getWebControls({ Id: id });
+            postData.TypeName = $('#type option:selected').text();
+            if (postData.Money <= 0) {
+                ys.msgError("已收金额不允许为0或负数，不可提交。"); return;
+            }
+            ys.ajax({
+                url: '@Url.Content("~/ChargeManage/Record/SaveFormJson")',
+                type: 'post',
+                data: postData,
+                success: function (obj) {
+                    if (obj.Tag == 1) {
+                        ys.msgSuccess(obj.Message);
+                        parent.searchGrid();
+                        parent.layer.close(index);
+                    }
+                    else {
+                        ys.msgError(obj.Message);
+                    }
+                }
+            });
+        }
+    }
+</script>
+

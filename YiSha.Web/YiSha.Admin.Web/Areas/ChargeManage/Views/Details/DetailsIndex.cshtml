@@ -1,0 +1,175 @@
+﻿@{
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+@section header{
+    <link href="@Url.Content("~/lib/bootstrap.table/1.12.0/extensions/editable/bootstrap-editable.css")" rel="stylesheet" type="text/css">
+    <script src='@Url.Content("~/lib/bootstrap.table/1.12.0/extensions/editable/bootstrap-editable.min.js")' type="text/javascript"></script>
+    <script src='@Url.Content("~/lib/bootstrap.table/1.12.0/extensions/editable/bootstrap-table-editable.js")' type="text/javascript"></script>
+    <script src='@Url.Content("~/lib/bootstrap.table/1.12.0/extensions/editable/bootstrap-datepicker.zh-CN.js")' type="text/javascript"></script>
+}
+<div class="container-div">
+    <div class="row">
+        <div id="searchDiv" class="col-sm-12 search-collapse" style="display:block">
+            <div class="select-list">
+                <ul>
+                    <li>
+                        收费单号： <input id="ChargeNo" type="text" value="@ViewBag.ChargeNo" style="background-color: #eee;" readonly="readonly" disabled="disabled" />
+                    </li>
+                    <li style="width:50%">
+                        收费单名称：<input id="ChargeName" type="text" value="@ViewBag.ChargeName" style="background-color: #eee;" readonly="readonly" disabled="disabled" />
+                    </li>
+                    <li>
+                        学生编号：<input id="StudentCode" col="StudentCode" type="text" />
+                    </li>
+                    <li>
+                        状态：<span id="status" col="Status"></span>
+                    </li>
+                    <li>
+                        <a id="btnSearch" class="btn btn-primary btn-sm" onclick="searchGrid()"><i class="fa fa-search"></i>&nbsp;搜索</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div class="btn-group-sm hidden-xs" id="toolbar">
+            <a id="btnAdd" class="btn btn-success" onclick="showSaveForm(true)"><i class="fa fa-plus"></i> 新增</a>
+            @*<a id="btnEdit" class="btn btn-primary disabled" onclick="showSaveForm(false)"><i class="fa fa-edit"></i> 修改</a>*@
+            <a id="btnDelete" class="btn btn-danger disabled" onclick="deleteForm()"><i class="fa fa-remove"></i> 删除</a>
+            <span class="text-danger">提示：只允许修改金额，点击金额直接修改。</span>
+        </div>
+        <div class="col-sm-12 select-table table-striped">
+            <table id="gridTable" data-mobile-responsive="true"></table>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    $(function () {
+        initGrid();
+        $("#status").ysComboBox({ data: ys.getJson(@Html.Raw(typeof(YiSha.Enum.ChargeEnum.MoneyStatusEnum).EnumToDictionaryString())) });
+    });
+
+    function initGrid() {
+        var queryUrl = '@Url.Content("~/ChargeManage/Details/GetPageListJson?ChargeSheetId=" + ViewBag.ChargeSheetId)';
+        $('#gridTable').ysTable({
+            url: queryUrl,
+            onEditableSave: onEditableSave,
+            columns: [
+                { checkbox: true, visible: true },
+                { field: 'Id', title: 'Id', visible: false },
+                { field: 'ChargeSheetId', title: '收费单id', visible: false },
+                { field: 'SysDepartmentName', title: '学校名称', visible: false },
+                { field: 'StudentCode', title: '学生编号' },
+                { field: 'StudentName', title: '学生姓名' },
+                { field: 'DetailsName', title: '明细名称' },
+                {
+                    field: 'Money', title: '金额',
+                    editable: {
+                        type: 'text',
+                        emptytext: "【金额】为空",
+                        validate: function (value) {
+                            if (value.length == 0) {
+                                return '金额不能为空';
+                            }
+                        }
+                    }
+                },
+                {
+                    field: 'Status', title: '状态', formatter: function (value, row, index) {
+                        if (row.Status == "@YiSha.Enum.ChargeEnum.MoneyStatusEnum.Yes.ParseToInt()") {
+                            return '<span class="badge badge-primary">' + "@YiSha.Enum.ChargeEnum.MoneyStatusEnum.Yes.GetDescription()" + '</span>';
+                        } else {
+                            return '<span class="badge badge-warning">' + "@YiSha.Enum.ChargeEnum.MoneyStatusEnum.No.GetDescription()" + '</span>';
+                        }
+                    }
+                },
+                { field: 'BaseCreateTime', title: '创建时间' },
+            ],
+            queryParams: function (params) {
+                var pagination = $('#gridTable').ysTable('getPagination', params);
+                var queryString = $('#searchDiv').getWebControls(pagination);
+                return queryString;
+            }
+        });
+    }
+
+    function searchGrid() {
+        $('#gridTable').ysTable('search');
+        resetToolbarStatus();
+    }
+
+    function showSaveForm(bAdd) {
+        var id = 0;
+        if (!bAdd) {
+            var selectedRow = $('#gridTable').bootstrapTable('getSelections');
+            if (!ys.checkRowEdit(selectedRow)) {
+                return;
+            }
+            else {
+                id = selectedRow[0].Id;
+            }
+        }
+
+        ys.openDialog({
+            title: id > 0 ? '编辑' : '添加',
+            content: '@Url.Content("~/ChargeManage/Details/DetailsForm")' + '?id=' + id + '&ChargeSheetId=' +'@ViewBag.ChargeSheetId' +'&ChargeNo=' +'@ViewBag.ChargeNo' ,
+            width: '85%',
+            height: '95%',
+            callback: function (index, layero) {
+                var iframeWin = window[layero.find('iframe')[0]['name']];
+                iframeWin.saveForm(index);
+            }
+        });
+    }
+
+    function deleteForm() {
+        var selectedRow = $('#gridTable').bootstrapTable('getSelections');
+        if (ys.checkRowDelete(selectedRow)) {
+            ys.confirm('确认要删除选中的' + selectedRow.length + '条数据吗？', function () {
+                var ids = ys.getIds(selectedRow);
+                for (var i = 0; i < selectedRow.length; i++) {
+                    if (selectedRow[i].Status == 2) {
+                        ys.msgError("所选删除行中有已缴费记录，不允许删除！"); return;
+                    }
+                }
+                ys.ajax({
+                    url: '@Url.Content("~/ChargeManage/Details/DeleteFormJson")' + '?ids=' + ids,
+                    type: 'post',
+                    success: function (obj) {
+                        if (obj.Tag == 1) {
+                            ys.msgSuccess(obj.Message);
+                            searchGrid();
+                        }
+                        else {
+                            ys.msgError(obj.Message);
+                        }
+                    }
+                });
+            });
+        }
+    }
+
+    function onEditableSave(field, row, oldValue, $el) {
+
+        var postData = { };
+        postData.Money = row[field];
+        postData.Id = row["Id"];
+        if (row["Status"] == 2) {
+            ys.msgError("该记录已缴费，不允许再次修改金额。");
+            searchGrid();
+            return;
+        }
+            ys.ajax({
+                url: '@Url.Content("~/ChargeManage/Details/SaveFormJsonMoney")',
+                type: 'post',
+                data: postData,
+                success: function (obj) {
+                    if (obj.Tag == 1) {
+                        ys.msgSuccess(obj.Message);
+                    }
+                    else {
+                        ys.msgError(obj.Message);
+                    }
+                }
+            });
+    }
+</script>

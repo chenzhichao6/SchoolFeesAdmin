@@ -1,0 +1,126 @@
+﻿@{
+    Layout = "~/Views/Shared/_FormGray.cshtml";
+}
+
+<div class="wrapper wrapper-content">
+    <div class="col-sm-12">
+
+        <div class="row">
+            <div class="col-sm-6">
+                <div class="ibox float-e-margins">
+                    <div class="ibox-title">
+                        <h5>系统介绍</h5>
+                        <div class="ibox-tools">
+                            <a class="collapse-link">
+                                <i class="fa fa-chevron-up"></i>
+                            </a>
+                            <a class="close-link">
+                                <i class="fa fa-times"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="ibox-content">
+                        <div class="row">
+                            <div class="col-sm-12" style="font-size:14px">
+                                <p>
+                                    学校收费系统通过考察几十家学校收集需求，吸取了多学校的意见与建议。<br />
+                                    借鉴了目前软件的最近技术，让您使用起来更加顺畅，更加简单快捷。<br />
+                                    它适用于 <b>幼儿园学校</b>、<b>公立学校</b>、<b>私立学校</b>、<b>其他</b> 这类学校的收费管理。<br />
+                                </p>
+                                <p>当前版本：@YiSha.Util.GlobalContext.GetVersion() &nbsp;&nbsp;<span class="label label-warning">正式版</span></p>
+                                <p></p>
+                                
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6">
+                <div class="ibox float-e-margins">
+                    <div class="ibox-title">
+                        <h5>技术选型</h5>
+                        <div class="ibox-tools">
+                            <a class="collapse-link">
+                                <i class="fa fa-chevron-up"></i>
+                            </a>
+                            <a class="close-link"><i class="fa fa-times"></i></a>
+                        </div>
+                    </div>
+                    <div class="ibox-content" style="font-size:14px">
+                        <ul>
+                            <li>1. 前端： Bootstrap 3.3.7</li>
+                            <li>2. 核心框架：.Net Core MVC</li>
+                            <li>3. 缓存层：Memory、Redis</li>
+                            <li>4. 持久层框架：Entity Framework Core</li>
+                            <li>5. 数据库支持：SqlServer,MySql,Oracle</li>
+                            <li>6. 定时任务：Quartz.Net</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-sm-6">
+                <div class="ibox float-e-margins">
+                    <div class="ibox-title">
+                        <h5>联系信息</h5>
+                        <div class="ibox-tools">
+                            <a class="collapse-link">
+                                <i class="fa fa-chevron-up"></i>
+                            </a>
+                            <a class="close-link"><i class="fa fa-times"></i></a>
+                        </div>
+                    </div>
+                    <div class="ibox-content">
+                        <p>
+                            <i class="fa fa-send-o"></i> 官网：<a href="http://www.baidu.com" target="_blank">http://www.baidu.com</a>
+                        </p>
+                        <p>
+                            <i class="fa fa-qq"></i> QQ：<a href="https://jq.qq.com/?_wv=1027&k=5Mu6IPk" target="_blank">295912610</a>
+                        </p>
+                        <p>
+                            <i class="fa fa-weixin"></i> 微信：<span>XXccccccX</span>
+                        </p>
+                        <p>
+                            <i class="fa fa-credit-card"></i> 电话：<span>1111111111111</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            
+        </div>
+
+    </div>
+</div>
+<script>
+    $(function () {
+
+        $(".modal").appendTo("body"), $("[data-toggle=popover]").popover(), $(".collapse-link").click(function () {
+            var div_ibox = $(this).closest("div.ibox"),
+                e = $(this).find("i"),
+                i = div_ibox.find("div.ibox-content");
+            i.slideToggle(200),
+                e.toggleClass("fa-chevron-up").toggleClass("fa-chevron-down"),
+                div_ibox.toggleClass("").toggleClass("border-bottom"),
+                setTimeout(function () {
+                    div_ibox.resize();
+                }, 50);
+        }), $(".close-link").click(function () {
+            var div_ibox = $(this).closest("div.ibox");
+            div_ibox.remove()
+        });
+
+        $('#pay-qrcode').click(function () {
+            var html = $(this).html();
+            ys.openDialogContent({
+                content: html,
+                width: '600px',
+                height: '321px'
+            });
+        });
+
+    });
+
+</script>

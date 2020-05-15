@@ -1,0 +1,97 @@
+﻿@{
+    Layout = "~/Views/Shared/_Index.cshtml";
+ }
+<div class="container-div">
+    <div class="row">
+        <div id="searchDiv" class="col-sm-12 search-collapse">
+            <div class="select-list">
+                <ul>
+                    <li>
+                        姓名：<input id="name" col="Name" type="text" />
+                    </li>
+                    <li>
+                        班级：<input id="class" col="Class" type="text" />
+                    </li>
+                    <li>
+                        状态：<span id="status" col="Status"></span>
+                    </li>
+                    <li>
+                        <a id="btnSearch" class="btn btn-primary btn-sm" onclick="searchGrid()"><i class="fa fa-search"></i>&nbsp;搜索</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div class="btn-group-sm hidden-xs" id="toolbar">
+        </div>
+        <div class="col-sm-12 select-table table-striped">
+            <table id="gridTable" data-mobile-responsive="true"></table>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    $(function () {
+        initGrid();
+
+        $("#status").ysComboBox({ data: ys.getJson(@Html.Raw(typeof(StatusEnum).EnumToDictionaryString())) });
+    });
+
+    function initGrid() {
+        var queryUrl = '@Url.Content("~/ChargeManage/StudentInfo/GetPageListJson")';
+        $('#gridTable').ysTable({
+            url: queryUrl,
+            columns: [
+                { field: 'Id', title: 'Id', visible: false },
+                { field: 'SysDepartmentName', title: '学校名称', visible: false },
+                { field: 'Code', title: '学生编号' },
+                { field: 'Name', title: '姓名' },
+                { field: 'Class', title: '班级' },
+                { field: 'Openid', title: 'Openid' },
+                { field: 'Phone', title: '手机号码' },
+                {
+                    field: 'Status', title: '状态', formatter: function (value, row, index) {
+                        if (row.Status == "@StatusEnum.Yes.ParseToInt()") {
+                            return '<span class="badge badge-primary">' + "@StatusEnum.Yes.GetDescription()" + '</span>';
+                        } else {
+                            return '<span class="badge badge-warning">' + "@StatusEnum.No.GetDescription()" + '</span>';
+                        }
+                    }
+                },
+                {
+                    title: '操作',
+                    align: 'center',
+                    formatter: function (value, row, index) {
+                        var actions = [];
+                        actions.push('<a class="btn btn-success btn-xs"  onclick="SheetForm(\'' + row.Id+'\')"><i class="fa fa-credit-card"></i>&nbsp;收费</a> ');
+                        return actions.join('');
+                    }
+                }
+            ],
+            queryParams: function (params) {
+                var pagination = $('#gridTable').ysTable('getPagination', params);
+                var queryString = $('#searchDiv').getWebControls(pagination);
+                return queryString;
+            }
+        });
+    }
+
+    function searchGrid() {
+        $('#gridTable').ysTable('search');
+        resetToolbarStatus();
+    }
+
+    function SheetForm(id) {
+        var selectedRow = $('#gridTable').bootstrapTable("getRowByUniqueId", id);
+        ys.openDialog({
+            title: selectedRow.Name+'_线下收费',
+            content: '@Url.Content("~/ChargeManage/Record/RecordForm")' + '?StudentCode=' + selectedRow.Code + "&StudentName=" + selectedRow.Name,
+            width: '75%',
+            height: '90%',
+            callback: function (index, layero) {
+                var iframeWin = window[layero.find('iframe')[0]['name']];
+                iframeWin.saveForm(index);
+            }
+        });
+    }
+
+</script>

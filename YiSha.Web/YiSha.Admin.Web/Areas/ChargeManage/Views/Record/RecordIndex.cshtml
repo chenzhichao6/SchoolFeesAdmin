@@ -1,0 +1,184 @@
+﻿@{
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+@section header{
+    <link href="@Url.Content("~/lib/bootstrap.table/1.12.0/extensions/editable/bootstrap-editable.css")" rel="stylesheet" type="text/css">
+    <script src='@Url.Content("~/lib/bootstrap.table/1.12.0/extensions/editable/bootstrap-editable.min.js")' type="text/javascript"></script>
+    <script src='@Url.Content("~/lib/bootstrap.table/1.12.0/extensions/editable/bootstrap-table-editable.js")' type="text/javascript"></script>
+    <script src='@Url.Content("~/lib/bootstrap.table/1.12.0/extensions/editable/bootstrap-datepicker.zh-CN.js")' type="text/javascript"></script>
+}
+<div class="container-div">
+    <div class="row">
+        <div id="searchDiv" class="col-sm-12 search-collapse">
+            <div class="select-list">
+                <ul>
+                    <li>
+                        收费人名称：&nbsp;<input id="userName" col="UserName" type="text" />
+                    </li>
+                    <li>
+                        收费单号：<input id="chargeNo" col="ChargeNo" type="text" />
+                    </li>
+                    <li>
+                        单据号：<input id="invoiceNo" col="InvoiceNo" type="text" />
+                    </li>
+                    <li>
+                        收费类型名称：<input id="typeName" col="TypeName" type="text" />
+                    </li>
+                    <li>
+                        记录状态：<span id="status" col="Status"></span>
+                    </li>
+                    <li class="select-time">
+                        <label>收费时间： </label>
+                        <input id="startTime" col="StartTime" type="text" class="time-input" placeholder="开始时间" />
+                        <span>-</span>
+                        <input id="endTime" col="EndTime" type="text" class="time-input" placeholder="结束时间" />
+                    </li>
+                    <li>
+                        <a id="btnSearch" class="btn btn-primary btn-sm" onclick="searchGrid()"><i class="fa fa-search"></i>&nbsp;搜索</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div class="btn-group-sm hidden-xs" id="toolbar">
+            @*<a id="btnAdd" class="btn btn-success" onclick="showSaveForm(true)"><i class="fa fa-plus"></i> 新增</a>
+                <a id="btnEdit" class="btn btn-primary disabled" onclick="showSaveForm(false)"><i class="fa fa-edit"></i> 修改</a>
+                <a id="btnDelete" class="btn btn-danger disabled" onclick="deleteForm()"><i class="fa fa-remove"></i> 删除</a>*@
+        </div>
+        <div class="col-sm-12 select-table table-striped">
+            <table id="gridTable" data-mobile-responsive="true"></table>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    $(function () {
+        initGrid();
+
+        $("#status").ysComboBox({ data: ys.getJson(@Html.Raw(typeof(YiSha.Enum.ChargeEnum.RecordStatusEnum).EnumToDictionaryString())) });
+        laydate.render({
+            elem: '#startTime',
+            type: 'datetime',
+            trigger: 'click'
+        });
+        laydate.render({
+            elem: '#endTime',
+            type: 'datetime',
+            trigger: 'click'
+        });
+
+
+    });
+
+    function initGrid() {
+        var queryUrl = '@Url.Content("~/ChargeManage/Record/GetPageListJson")';
+        $('#gridTable').ysTable({
+            url: queryUrl,
+            onEditableSave: onEditableSave,
+            columns: [
+                { checkbox: true, visible: true },
+                { field: 'Id', title: 'Id', visible: false },
+                { field: 'SysDepartmentName', title: '学校名称', visible: false },
+                { field: 'ChargeNo', title: '收费单号' },
+                { field: 'InvoiceNo', title: '单据号' },
+                { field: 'StudentCode', title: '学生编号' },
+                { field: 'StudentName', title: '学生姓名' },
+                { field: 'Money', title: '金额' },
+                { field: 'TradeNo', title: '交易单号' },
+                { field: 'TypeName', title: '收费类型' },
+                { field: 'UserName', title: '收费人' },
+                { field: 'ChargeDate', title: '收费时间' },
+                {
+                    field: 'Status', title: '状态',
+                    align: 'center',
+                    editable: {
+                        type: 'select',
+                        source: [{
+                            value: @YiSha.Enum.ChargeEnum.RecordStatusEnum.No.ParseToInt(),
+                            text: "@YiSha.Enum.ChargeEnum.RecordStatusEnum.No.GetDescription()"
+                        }, {
+                            value: @YiSha.Enum.ChargeEnum.RecordStatusEnum.Yes.ParseToInt(),
+                            text: "@YiSha.Enum.ChargeEnum.RecordStatusEnum.Yes.GetDescription()"
+                        }]
+                    }
+                },
+                { field: 'Remarks', title: '备注' },
+            ],
+            queryParams: function (params) {
+                var pagination = $('#gridTable').ysTable('getPagination', params);
+                var queryString = $('#searchDiv').getWebControls(pagination);
+                return queryString;
+            }
+        });
+    }
+
+    function searchGrid() {
+        $('#gridTable').ysTable('search');
+        resetToolbarStatus();
+    }
+
+    function showSaveForm(bAdd) {
+        var id = 0;
+        if (!bAdd) {
+            var selectedRow = $('#gridTable').bootstrapTable('getSelections');
+            if (!ys.checkRowEdit(selectedRow)) {
+                return;
+            }
+            else {
+                id = selectedRow[0].Id;
+            }
+        }
+        ys.openDialog({
+            title: id > 0 ? '编辑' : '添加',
+            content: '@Url.Content("~/ChargeManage/Record/RecordForm")' + '?id=' + id,
+            width: '768px',
+            height: '90%',
+            callback: function (index, layero) {
+                var iframeWin = window[layero.find('iframe')[0]['name']];
+                iframeWin.saveForm(index);
+            }
+        });
+    }
+
+    function deleteForm() {
+        var selectedRow = $('#gridTable').bootstrapTable('getSelections');
+        if (ys.checkRowDelete(selectedRow)) {
+            ys.confirm('确认要删除选中的' + selectedRow.length + '条数据吗？', function () {
+                var ids = ys.getIds(selectedRow);
+                ys.ajax({
+                    url: '@Url.Content("~/ChargeManage/Record/DeleteFormJson")' + '?ids=' + ids,
+                    type: 'post',
+                    success: function (obj) {
+                        if (obj.Tag == 1) {
+                            ys.msgSuccess(obj.Message);
+                            searchGrid();
+                        }
+                        else {
+                            ys.msgError(obj.Message);
+                        }
+                    }
+                });
+            });
+        }
+    }
+
+
+    function onEditableSave(field, row, oldValue, $el) {
+
+        var postData = { };
+        postData.Status = row[field];
+        postData.Id = row["Id"];
+            ys.ajax({
+                url: '@Url.Content("~/ChargeManage/Record/SaveFormJsonStatus")',
+                type: 'post',
+                data: postData,
+                success: function (obj) {
+                    if (obj.Tag == 1) {
+                        ys.msgSuccess(obj.Message);
+                    }
+                    else {
+                        ys.msgError(obj.Message);
+                    }
+                }
+            });
+    }
+</script>
