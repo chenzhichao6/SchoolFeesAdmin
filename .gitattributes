@@ -62,8 +62,10 @@
 #*.rtf   diff=astextplain
 #*.RTF   diff=astextplain
 
-*.js linguist-language=.net core
+*.js linguist-language=C#
 
-*.css linguist-language=.net core
+*.css linguist-language=C#
 
-*.html linguist-language=.net core
+*.html linguist-language=C#
+
+*.cs linguist-language=C#
